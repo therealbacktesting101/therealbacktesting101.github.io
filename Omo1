@@ -50,14 +50,6 @@
   button:hover {
     background: #666;
   }
-  .buy-marker {
-    color: lime;
-    font-weight: bold;
-  }
-  .sell-marker {
-    color: tomato;
-    font-weight: bold;
-  }
 </style>
 </head>
 <body>
@@ -83,7 +75,6 @@
 
 <script>
 // Sample EUR/USD candle data (one candle per minute, simplified)
-// Format: { time: UNIX timestamp (seconds), open, high, low, close }
 const candles = [
   { time: 1691625600, open: 1.0810, high: 1.0830, low: 1.0800, close: 1.0820 },
   { time: 1691625660, open: 1.0820, high: 1.0840, low: 1.0815, close: 1.0835 },
@@ -97,7 +88,7 @@ const candles = [
   { time: 1691626140, open: 1.0890, high: 1.0900, low: 1.0885, close: 1.0895 }
 ];
 
-// Trades data - each trade marks candle index, type (buy/sell), and commentary index
+// Trades data - candle index, type, and commentary index
 const trades = [
   { candleIndex: 2, type: 'buy', commentIndex: 1 },
   { candleIndex: 4, type: 'sell', commentIndex: 2 },
@@ -106,7 +97,7 @@ const trades = [
   { candleIndex: 9, type: 'buy', commentIndex: 5 }
 ];
 
-// Commentary text corresponding to trades and general notes
+// Commentary for each trade and session start
 const commentary = [
   "Starting the session: Let's analyze the EUR/USD using multiple timeframes and SMC/ICT concepts.",
   "Trade 1: Buy at candle 3 after spotting a demand zone and confirmation from RSI and volume increase.",
@@ -116,7 +107,7 @@ const commentary = [
   "Trade 5: Buy at candle 10 as market shows accumulation and a bullish reversal pattern forms."
 ];
 
-// Initialize chart
+// Create chart
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
   width: window.innerWidth * 0.66,
   height: window.innerHeight * 0.8,
@@ -144,21 +135,17 @@ const chart = LightweightCharts.createChart(document.getElementById('chart'), {
 const candleSeries = chart.addCandlestickSeries();
 candleSeries.setData([]);
 
-// Commentary and animation logic
-let currentCandle = 0;
-let timer = null;
-
+// Display commentary text
 function displayComment(index) {
   document.getElementById('comment-text').innerText = commentary[index];
 }
 
-function plotTrades(upToIndex) {
-  // Clear markers first
+// Plot buy/sell markers on chart
+function plotTrades(upto) {
   candleSeries.setMarkers([]);
   const markers = [];
-
   for (const trade of trades) {
-    if (trade.candleIndex <= upToIndex) {
+    if (trade.candleIndex <= upto) {
       const c = candles[trade.candleIndex];
       markers.push({
         time: c.time,
@@ -172,32 +159,36 @@ function plotTrades(upToIndex) {
   candleSeries.setMarkers(markers);
 }
 
+let currentCandle = 0;
+let timer = null;
+
+// Animate candles and commentary
 function animate() {
   if (currentCandle > candles.length) {
     clearInterval(timer);
     return;
   }
   candleSeries.setData(candles.slice(0, currentCandle));
-  plotTrades(currentCandle-1);
+  plotTrades(currentCandle - 1);
 
-  // Show commentary if there's a trade on this candle
-  const tradeHere = trades.find(t => t.candleIndex === currentCandle-1);
-  if (tradeHere) {
-    displayComment(tradeHere.commentIndex);
+  // Show commentary if trade on candle
+  const trade = trades.find(t => t.candleIndex === currentCandle - 1);
+  if (trade) {
+    displayComment(trade.commentIndex);
   } else if (currentCandle === 0) {
     displayComment(0);
   }
-
   currentCandle++;
 }
 
+// Control functions
 function play() {
-  if(timer) return; // already playing
+  if (timer) return;
   timer = setInterval(animate, 1000);
 }
 
 function pause() {
-  if(timer) {
+  if (timer) {
     clearInterval(timer);
     timer = null;
   }
@@ -211,16 +202,20 @@ function restart() {
   displayComment(0);
 }
 
+// Button events
 document.getElementById('play').addEventListener('click', play);
 document.getElementById('pause').addEventListener('click', pause);
 document.getElementById('restart').addEventListener('click', restart);
 
-// Initial setup
+// Initialize
 restart();
 
 // Resize chart on window resize
 window.addEventListener('resize', () => {
-  chart.applyOptions({ width: window.innerWidth * 0.66, height: window.innerHeight * 0.8 });
+  chart.applyOptions({
+    width: window.innerWidth * 0.66,
+    height: window.innerHeight * 0.8,
+  });
 });
 </script>
 </body>
